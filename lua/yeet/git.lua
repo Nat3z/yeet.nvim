@@ -1,40 +1,51 @@
 local _Git = {}
-
 function _Git.has_pending_work(cwd)
-	local porcelain = vim.fn.systemlist({ "git", "-C", cwd, "status", "--porcelain" })
+	local status = vim.fn.systemlist({ "git", "-C", cwd, "status", "--porcelain=v1", "--branch" })
 	if vim.v.shell_error ~= 0 then
 		return false
 	end
-	if #porcelain > 0 then
-		return true
+
+	for _, line in ipairs(status) do
+		if line:sub(1, 2) ~= "##" then
+			return true
+		end
+
+		local branch_status = line:lower()
+		if
+			branch_status:find("ahead", 1, true) ~= nil
+			or branch_status:find("behind", 1, true) ~= nil
+			or branch_status:find("gone", 1, true) ~= nil
+		then
+			return true
+		end
 	end
 
-	local status = table.concat(vim.fn.systemlist({ "git", "-C", cwd, "status" }), "\n"):lower()
-	return status:find("ahead", 1, true) ~= nil
-		or status:find("behind", 1, true) ~= nil
-		or status:find("have diverged", 1, true) ~= nil
+	return false
 end
 
-local function git_is_up_to_date(cwd)
-	local porcelain = vim.fn.systemlist({ "git", "-C", cwd, "status", "--porcelain" })
-	if vim.v.shell_error ~= 0 or #porcelain > 0 then
+function _Git.git_is_up_to_date(cwd)
+	local status = vim.fn.systemlist({ "git", "-C", cwd, "status", "--porcelain=v1", "--branch" })
+	if vim.v.shell_error ~= 0 then
 		return false
 	end
 
-	local status = table.concat(vim.fn.systemlist({ "git", "-C", cwd, "status" }), "\n"):lower()
-	local clean = status:find("nothing to commit", 1, true) ~= nil or status:find("working tree clean", 1, true) ~= nil
-	if not clean then
-		return false
+	for _, line in ipairs(status) do
+		if line:sub(1, 2) ~= "##" then
+			return false
+		end
+
+		local branch_status = line:lower()
+		if
+			branch_status:find("ahead", 1, true) ~= nil
+			or branch_status:find("behind", 1, true) ~= nil
+			or branch_status:find("gone", 1, true) ~= nil
+		then
+			return false
+		end
 	end
 
-	return status:find("up to date", 1, true) ~= nil
-		or (
-			status:find("ahead", 1, true) == nil
-			and status:find("behind", 1, true) == nil
-			and status:find("have diverged", 1, true) == nil
-		)
+	return true
 end
-
 function _Git.tmux_watch_git_up_to_date(pane_id, cwd, saw_work, checks)
 	checks = checks or 0
 
@@ -47,7 +58,7 @@ function _Git.tmux_watch_git_up_to_date(pane_id, cwd, saw_work, checks)
 		saw_work = true
 	end
 
-	if saw_work and git_is_up_to_date(cwd) then
+	if saw_work and _Git.git_is_up_to_date(cwd) then
 		vim.notify("Git is up to date; closing tmux pane " .. pane_id, vim.log.levels.INFO)
 		vim.fn.system({ "tmux", "kill-pane", "-t", pane_id })
 		return
