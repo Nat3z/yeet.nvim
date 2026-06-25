@@ -41,9 +41,9 @@ function _Yeet.setup(opts)
 	end, { desc = "Runs yeet.nvim" })
 end
 
-function _Yeet.yeet_with_tmux()
+function _Yeet.yeet_with_tmux(_, extra_prompt)
 	if vim.env.TMUX == nil or vim.env.TMUX == "" then
-		vim.notify("yeet needs to run inside tmux", vim.log.levels.WARN)
+		vim.notify("yeet: tmux mode needs to run inside tmux", vim.log.levels.WARN)
 		return
 	end
 
@@ -59,7 +59,8 @@ function _Yeet.yeet_with_tmux()
 		return
 	end
 
-	local command, tmux_callback = _Yeet.opts.provider.run_command(_Yeet.opts.model, _Yeet.opts.prompt, cwd, _Yeet)
+	local command, tmux_callback =
+		_Yeet.opts.provider.run_tmux(_Yeet.opts.model, _Yeet.opts.prompt .. (extra_prompt or ""), cwd, _Yeet)
 	local pane_id = vim.fn.systemlist({
 		"tmux",
 		"split-window",
@@ -102,6 +103,54 @@ function _Yeet.yeet_with_tmux()
 			vim.notify("yeet: timed out", vim.log.levels.ERROR)
 		end
 	end, _Yeet.opts.timings.timeout)
+end
+
+function _Yeet.yeet_with_headless(_, extra_prompt)
+	local cwd = vim.fn.getcwd()
+
+	if _Yeet.opts.model == nil or _Yeet.opts.model == "" then
+		vim.notify("yeet: opts.model is not set", vim.log.levels.ERROR)
+		return
+	end
+
+	if not git.has_pending_work(cwd) then
+		vim.notify("yeet: no pending git work to yeet", vim.log.levels.INFO)
+		return
+	end
+
+	local command =
+		_Yeet.opts.provider.run_headless(_Yeet.opts.model, _Yeet.opts.prompt .. " " .. (extra_prompt or ""), cwd, _Yeet)
+
+	vim.notify("yeet: now yeeting...", vim.log.levels.DEBUG)
+	do
+		vim.system(command, { cwd = cwd, text = true }, function(completed)
+			vim.schedule(function()
+				local output = (completed.stdout or "") .. (completed.stderr or "")
+				local result = vim.split(vim.trim(output), "\n", { trimempty = true })
+
+				if completed.code ~= 0 then
+					vim.notify("yeet: failed to yeet", vim.log.levels.ERROR)
+					if #result > 0 then
+						vim.notify(vim.inspect(result), vim.log.levels.ERROR)
+					end
+					return
+				end
+
+				if #result > 0 then
+					-- check if work was successfully applied
+					if git.has_pending_work(cwd) then
+						vim.notify("yeet: failed to yeet", vim.log.levels.ERROR)
+						vim.notify(vim.inspect(result), vim.log.levels.ERROR)
+					else
+						vim.notify("yeet: yeeted successfully", vim.log.levels.INFO)
+					end
+				else
+					vim.notify("yeet: no output from provider", vim.log.levels.WARN)
+				end
+			end)
+		end)
+		return
+	end
 end
 
 return _Yeet

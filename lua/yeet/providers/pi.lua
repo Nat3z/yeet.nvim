@@ -1,7 +1,6 @@
 local _PiProvider = {}
 
--- pane_id may be nil if not running as tmux
-function _PiProvider.run_command(model_name, prompt, _, yeet)
+function _PiProvider.run_tmux(model_name, prompt, _, yeet)
 	local cmd = {
 		"pi",
 		"--model",
@@ -17,6 +16,17 @@ function _PiProvider.run_command(model_name, prompt, _, yeet)
 				end, yeet.opts.timings.send_delay)
 			end, yeet.opts.timings.launch_delay)
 		end
+end
+
+function _PiProvider.run_headless(model_name, prompt, _, _)
+	local cmd = {
+		"pi",
+		"--model",
+		model_name,
+		"-p",
+		prompt,
+	}
+	return cmd
 end
 
 return _PiProvider

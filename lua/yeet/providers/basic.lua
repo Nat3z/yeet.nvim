@@ -1,7 +1,6 @@
 local BasicProvider = {}
 
--- pane_id may be nil if not running as tmux
-function BasicProvider.run_command(model_name, prompt, cwd, yeet)
+function BasicProvider.run_tmux(model_name, prompt, cwd, yeet)
 	local cmd = {
 		"bash",
 		"-c",
@@ -24,6 +23,26 @@ function BasicProvider.run_command(model_name, prompt, cwd, yeet)
 				end, yeet.opts.timings.send_delay)
 			end, yeet.opts.timings.launch_delay)
 		end
+end
+
+function BasicProvider.run_headless(model_name, prompt, cwd, yeet)
+	local cmd = {
+		"bash",
+		"-c",
+		"echo " .. prompt,
+	}
+	vim.notify(
+		"Running headless command "
+			.. prompt
+			.. " in "
+			.. cwd
+			.. " with model "
+			.. model_name
+			.. " in "
+			.. vim.inspect(yeet),
+		vim.log.levels.INFO
+	)
+	return cmd
 end
 
 return BasicProvider
