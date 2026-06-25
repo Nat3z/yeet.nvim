@@ -122,35 +122,32 @@ function _Yeet.yeet_with_headless(_, extra_prompt)
 		_Yeet.opts.provider.run_headless(_Yeet.opts.model, _Yeet.opts.prompt .. " " .. (extra_prompt or ""), cwd, _Yeet)
 
 	vim.notify("yeet: now yeeting...", vim.log.levels.DEBUG)
-	do
-		vim.system(command, { cwd = cwd, text = true }, function(completed)
-			vim.schedule(function()
-				local output = (completed.stdout or "") .. (completed.stderr or "")
-				local result = vim.split(vim.trim(output), "\n", { trimempty = true })
+	vim.system(command, { cwd = cwd, text = true }, function(completed)
+		vim.schedule(function()
+			local output = (completed.stdout or "") .. (completed.stderr or "")
+			local result = vim.split(vim.trim(output), "\n", { trimempty = true })
 
-				if completed.code ~= 0 then
-					vim.notify("yeet: failed to yeet", vim.log.levels.ERROR)
-					if #result > 0 then
-						vim.notify(vim.inspect(result), vim.log.levels.ERROR)
-					end
-					return
-				end
-
+			if completed.code ~= 0 then
+				vim.notify("yeet: failed to yeet", vim.log.levels.ERROR)
 				if #result > 0 then
-					-- check if work was successfully applied
-					if git.has_pending_work(cwd) then
-						vim.notify("yeet: failed to yeet", vim.log.levels.ERROR)
-						vim.notify(vim.inspect(result), vim.log.levels.ERROR)
-					else
-						vim.notify("yeet: yeeted successfully", vim.log.levels.INFO)
-					end
-				else
-					vim.notify("yeet: no output from provider", vim.log.levels.WARN)
+					vim.notify(vim.inspect(result), vim.log.levels.ERROR)
 				end
-			end)
+				return
+			end
+
+			if #result > 0 then
+				-- check if work was successfully applied
+				if git.has_pending_work(cwd) then
+					vim.notify("yeet: failed to yeet", vim.log.levels.ERROR)
+					vim.notify(vim.inspect(result), vim.log.levels.ERROR)
+				else
+					vim.notify("yeet: yeeted successfully", vim.log.levels.INFO)
+				end
+			else
+				vim.notify("yeet: no output from provider", vim.log.levels.WARN)
+			end
 		end)
-		return
-	end
+	end)
 end
 
 return _Yeet
