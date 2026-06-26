@@ -10,15 +10,51 @@ _Yeet.pane_id = ""
 
 ---@class yeet.Opts
 ---@field prompt? string|string[] prompt to run in the tmux pane. Defaults to /yeet
+---@field provider any Provider instance
 ---@field model string Model passed to the command.
 ---@field timings? { launch_delay?: number, send_delay?: number, git_check_delay?: number, timeout?: number } Timing configuration for tmux operations. send_delay is the max wait before submitting if readiness detection fails.
----@field provider any Provider instance
+---@field tmux? { size?: number, direction?: string }
+---@field tmux_pane? { size?: number, direction?: string } Backwards-compatible alias for tmux.
 
+local function normalize_tmux_direction(direction)
+	if direction == nil or direction == "" then
+		return "h"
+	end
+
+	local normalized = tostring(direction):lower()
+	local aliases = {
+		h = "h",
+		horizontal = "h",
+		v = "v",
+		vertical = "v",
+	}
+
+	return aliases[normalized]
+end
+
+---@param opts yeet.Opts
 function _Yeet.setup(opts)
+	opts = opts or {}
+	local tmux_opts = opts.tmux or opts.tmux_pane or {}
+	local direction = normalize_tmux_direction(tmux_opts.direction)
+	if direction == nil then
+		vim.notify(
+			"yeet: invalid tmux direction: "
+				.. tostring(tmux_opts.direction)
+				.. " (expected h/v or horizontal/vertical)",
+			vim.log.levels.WARN
+		)
+		direction = "h"
+	end
+
 	_Yeet.opts = {
 		prompt = opts.prompt or "/yeet",
 		model = opts.model,
 		provider = opts.provider,
+		tmux = {
+			size = tmux_opts.size or 25,
+			direction = direction,
+		},
 		timings = {
 			launch_delay = opts.timings and opts.timings.launch_delay or 300,
 			send_delay = opts.timings and opts.timings.send_delay or 900,
@@ -65,9 +101,9 @@ function _Yeet.yeet_with_tmux(_, extra_prompt)
 		"tmux",
 		"split-window",
 		"-d",
-		"-h",
+		"-" .. _Yeet.opts.tmux.direction,
 		"-p",
-		"25",
+		tostring(_Yeet.opts.tmux.size),
 		"-c",
 		cwd,
 		"-P",
