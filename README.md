@@ -22,7 +22,7 @@ uses ai with a locally installed harness for yeeting your changes to git.
             prompt = "<your skill or prompt to yeet changes>", 
 
             -- the model provider used to yeet your changes
-            provider = yeet.providers.PiProvider -- available options: PiProvider
+            provider = yeet.providers.PiProvider, -- available options: PiProvider
 
             -- timings for tmux when your harness is launching and when to send keys
             -- all numbers are in (ms)
