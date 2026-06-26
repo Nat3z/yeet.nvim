@@ -40,7 +40,7 @@ uses ai with a locally installed harness for yeeting your changes to git.
             else
                 yeet.yeet_with_tmux() -- runs using tmux, will open a split pane to see output
             end
-        end)
+        end, { desc = "yeet: commit and push changes" })
     end,
 }
 ```
