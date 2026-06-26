@@ -147,6 +147,13 @@ function _Yeet.yeet_with_headless(_, extra_prompt)
 	end
 
 	vim.defer_fn(check_status_loop, _Yeet.opts.timings.git_check_delay)
+
+	vim.defer_fn(function()
+		if system_obj and not system_obj:is_closing() then
+			system_obj:kill("SIGTERM")
+			vim.notify("yeet: timed out", vim.log.levels.ERROR)
+		end
+	end, _Yeet.opts.timings.timeout)
 end
 
 return _Yeet
