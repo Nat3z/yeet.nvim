@@ -64,17 +64,14 @@ function _Yeet.setup(opts)
 	}
 
 	vim.api.nvim_create_user_command("Yeet", function(cmd)
-		if #cmd.args == 0 then
-			_Yeet.yeet_with_tmux()
-			return
-		end
-
 		if cmd.args == "tmux" then
 			_Yeet.yeet_with_tmux()
+		elseif cmd.args == "headless" then
+			_Yeet.yeet_with_headless()
 		else
 			vim.notify("Unknown argument: " .. cmd.args, vim.log.levels.ERROR)
 		end
-	end, { desc = "Runs yeet.nvim" })
+	end, { desc = "Runs yeet.nvim", nargs = 1 })
 end
 
 function _Yeet.yeet_with_tmux(_, extra_prompt)
