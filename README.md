@@ -28,7 +28,7 @@ uses ai with a locally installed harness for yeeting your changes to git.
             -- all numbers are in (ms)
             timings = {
                 launch_delay = 300, -- time to wait before sending keys for your prompt
-                send_delay = 900, -- time to wait after launch_delay before submitting the prompt
+                send_delay = 900, -- max time to wait before submitting if tmux readiness detection fails
                 git_check_delay = 1000, -- loop time to poll git to see if changes were committed
                 timeout = 180000, -- maximum time to wait for the model to push changes
             }

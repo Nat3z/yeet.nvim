@@ -11,7 +11,7 @@ _Yeet.pane_id = ""
 ---@class yeet.Opts
 ---@field prompt? string|string[] prompt to run in the tmux pane. Defaults to /yeet
 ---@field model string Model passed to the command.
----@field timings? { launch_delay?: number, send_delay?: number, git_check_delay?: number, timeout?: number } Timing configuration for tmux operations.
+---@field timings? { launch_delay?: number, send_delay?: number, git_check_delay?: number, timeout?: number } Timing configuration for tmux operations. send_delay is the max wait before submitting if readiness detection fails.
 ---@field provider any Provider instance
 
 function _Yeet.setup(opts)
