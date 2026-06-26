@@ -122,7 +122,7 @@ function _Yeet.yeet_with_headless(_, extra_prompt)
 		_Yeet.opts.provider.run_headless(_Yeet.opts.model, _Yeet.opts.prompt .. " " .. (extra_prompt or ""), cwd, _Yeet)
 
 	vim.notify("yeet: now yeeting...", vim.log.levels.DEBUG)
-	vim.system(command, { cwd = cwd, text = true }, function(completed)
+	local system_obj = vim.system(command, { cwd = cwd, text = true }, function(completed)
 		vim.schedule(function()
 			local output = (completed.stdout or "") .. (completed.stderr or "")
 			local result = vim.split(vim.trim(output), "\n", { trimempty = true })
@@ -132,22 +132,21 @@ function _Yeet.yeet_with_headless(_, extra_prompt)
 				if #result > 0 then
 					vim.notify(vim.inspect(result), vim.log.levels.ERROR)
 				end
-				return
-			end
-
-			if #result > 0 then
-				-- check if work was successfully applied
-				if git.has_pending_work(cwd) then
-					vim.notify("yeet: failed to yeet", vim.log.levels.ERROR)
-					vim.notify(vim.inspect(result), vim.log.levels.ERROR)
-				else
-					vim.notify("yeet: yeeted successfully", vim.log.levels.INFO)
-				end
-			else
-				vim.notify("yeet: no output from provider", vim.log.levels.WARN)
 			end
 		end)
 	end)
+
+	local function check_status_loop()
+		-- check if work was successfully applied
+		if not git.has_pending_work(cwd) then
+			vim.notify("yeet: yeeted successfully", vim.log.levels.INFO)
+			system_obj:kill("SIGTERM")
+		else
+			vim.defer_fn(check_status_loop, _Yeet.opts.timings.git_check_delay)
+		end
+	end
+
+	vim.defer_fn(check_status_loop, _Yeet.opts.timings.git_check_delay)
 end
 
 return _Yeet
