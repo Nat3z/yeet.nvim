@@ -5,7 +5,6 @@ local _Yeet = {}
 _Yeet.providers = {
 	PiProvider = require("yeet.providers.pi"),
 }
-
 _Yeet.pane_id = ""
 
 ---@class yeet.Opts
@@ -16,6 +15,7 @@ _Yeet.pane_id = ""
 ---@field tmux? { size?: number, direction?: string }
 ---@field tmux_pane? { size?: number, direction?: string } Backwards-compatible alias for tmux.
 
+-- normalizes tmux direction string to a compatible tmux option flag
 local function normalize_tmux_direction(direction)
 	if direction == nil or direction == "" then
 		return "h"
