@@ -1,7 +1,33 @@
 local _Git = {}
-function _Git.has_pending_work(cwd)
+
+local function git_status(cwd)
 	local status = vim.fn.systemlist({ "git", "-C", cwd, "status", "--porcelain=v1", "--branch" })
 	if vim.v.shell_error ~= 0 then
+		return nil
+	end
+
+	return status
+end
+
+local function branch_has_upstream(branch_status)
+	-- `git status --branch` prints `## branch...origin/branch` when an
+	-- upstream is configured, and only `## branch` when it is not. Treat a
+	-- missing upstream as pending work so yeet waits for `git push -u ...`, not
+	-- just for local commits.
+	return branch_status:find("...", 1, true) ~= nil
+end
+
+local function branch_is_synced(branch_status)
+	local lower = branch_status:lower()
+	return branch_has_upstream(branch_status)
+		and lower:find("ahead", 1, true) == nil
+		and lower:find("behind", 1, true) == nil
+		and lower:find("gone", 1, true) == nil
+end
+
+function _Git.has_pending_work(cwd)
+	local status = git_status(cwd)
+	if status == nil then
 		return false
 	end
 
@@ -10,12 +36,7 @@ function _Git.has_pending_work(cwd)
 			return true
 		end
 
-		local branch_status = line:lower()
-		if
-			branch_status:find("ahead", 1, true) ~= nil
-			or branch_status:find("behind", 1, true) ~= nil
-			or branch_status:find("gone", 1, true) ~= nil
-		then
+		if not branch_is_synced(line) then
 			return true
 		end
 	end
@@ -24,8 +45,8 @@ function _Git.has_pending_work(cwd)
 end
 
 function _Git.git_is_up_to_date(cwd)
-	local status = vim.fn.systemlist({ "git", "-C", cwd, "status", "--porcelain=v1", "--branch" })
-	if vim.v.shell_error ~= 0 then
+	local status = git_status(cwd)
+	if status == nil then
 		return false
 	end
 
@@ -34,12 +55,7 @@ function _Git.git_is_up_to_date(cwd)
 			return false
 		end
 
-		local branch_status = line:lower()
-		if
-			branch_status:find("ahead", 1, true) ~= nil
-			or branch_status:find("behind", 1, true) ~= nil
-			or branch_status:find("gone", 1, true) ~= nil
-		then
+		if not branch_is_synced(line) then
 			return false
 		end
 	end
